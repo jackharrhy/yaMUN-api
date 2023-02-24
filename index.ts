@@ -4,9 +4,9 @@ import { z } from "zod";
 import { getCoursesFromSemester } from "yamun";
 import asyncHandler from "express-async-handler";
 import NodeCache from "node-cache";
-import { debug } from "debug";
+import debugFactory from "debug";
 
-const debugLog = debug("yaMUN-api");
+const debug = debugFactory("yaMUN-api");
 const appCache = new NodeCache({ stdTTL: 600 });
 const app = express();
 
@@ -31,12 +31,12 @@ app.get(
 
     const id = `${coursesFromSemesterParams.year}-${coursesFromSemesterParams.term}-${coursesFromSemesterParams.level}`;
     if (appCache.has(id)) {
-      debugLog("Fetching data from cache...");
+      debug("Fetching data from cache...");
       res.json(appCache.get(id));
     } else {
       const courses = await getCoursesFromSemester(coursesFromSemesterParams);
       appCache.set(id, courses);
-      debugLog("Fetching data from API...");
+      debug("Fetching data from API...");
       res.json(courses);
     }
   })
