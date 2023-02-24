@@ -1,9 +1,11 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { z } from "zod";
-import { getCoursesFromSemester } from "yamun";
+import { getCoursesFromSemester, ICourse } from "yamun";
 import asyncHandler from "express-async-handler";
+import NodeCache from "node-cache";
 
+const appCache = new NodeCache({ stdTTL: 600 });
 const app = express();
 
 app.use(cors());
@@ -25,12 +27,16 @@ app.get(
       level: Number(req.params.level),
     });
 
-    // TODO make this cached somehow so it doesn't get refetched every single time
-    // however, ensure that after sometime (maybe every hour or so) it _will_ fetch
-    // this fresh
-    const courses = await getCoursesFromSemester(coursesFromSemesterParams);
-
-    res.json(courses);
+    const id = req.originalUrl;
+    if (appCache.has(id)) {
+      console.log("Fetching data from cache...");
+      res.json(appCache.get(id));
+    } else {
+      const courses = await getCoursesFromSemester(coursesFromSemesterParams);
+      appCache.set(id, courses);
+      console.log("Fetching data from API...");
+      res.json(courses);
+    }
   })
 );
 
